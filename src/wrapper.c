@@ -22,68 +22,68 @@
 #include <mimalloc.h>
 #endif
 
-extern const uint8_t qjsc_repl[];
-extern const uint32_t qjsc_repl_size;
-extern const uint8_t qjsc_standalone[];
-extern const uint32_t qjsc_standalone_size;
+// extern const uint8_t qjsc_repl[];
+// extern const uint32_t qjsc_repl_size;
+// extern const uint8_t qjsc_standalone[];
+// extern const uint32_t qjsc_standalone_size;
 
-// Must match standalone.js
-#define TRAILER_SIZE 12
-static const char trailer_magic[] = "quickjs2";
-static const int trailer_magic_size = sizeof(trailer_magic) - 1;
-static const int trailer_size = TRAILER_SIZE;
+// // Must match standalone.js
+// #define TRAILER_SIZE 12
+// static const char trailer_magic[] = "quickjs2";
+// static const int trailer_magic_size = sizeof(trailer_magic) - 1;
+// static const int trailer_size = TRAILER_SIZE;
 
-static int qjs__argc;
-static char **qjs__argv;
+// static int qjs__argc;
+// static char **qjs__argv;
 
-static bool is_standalone(const char *exe) {
-  FILE *exe_f = fopen(exe, "rb");
-  if (!exe_f)
-    return false;
-  if (fseek(exe_f, -trailer_size, SEEK_END) < 0)
-    goto fail;
-  uint8_t buf[TRAILER_SIZE];
-  if (fread(buf, 1, trailer_size, exe_f) != trailer_size)
-    goto fail;
-  fclose(exe_f);
-  return !memcmp(buf, trailer_magic, trailer_magic_size);
-fail:
-  fclose(exe_f);
-  return false;
-}
+// static bool is_standalone(const char *exe) {
+//   FILE *exe_f = fopen(exe, "rb");
+//   if (!exe_f)
+//     return false;
+//   if (fseek(exe_f, -trailer_size, SEEK_END) < 0)
+//     goto fail;
+//   uint8_t buf[TRAILER_SIZE];
+//   if (fread(buf, 1, trailer_size, exe_f) != trailer_size)
+//     goto fail;
+//   fclose(exe_f);
+//   return !memcmp(buf, trailer_magic, trailer_magic_size);
+// fail:
+//   fclose(exe_f);
+//   return false;
+// }
 
-static JSValue load_standalone_module(JSContext *ctx) {
-  JSModuleDef *m;
-  JSValue obj, val;
-  obj = JS_ReadObject(ctx, qjsc_standalone, qjsc_standalone_size,
-                      JS_READ_OBJ_BYTECODE);
-  if (JS_IsException(obj))
-    goto exception;
-  assert(JS_VALUE_GET_TAG(obj) == JS_TAG_MODULE);
-  if (JS_ResolveModule(ctx, obj) < 0) {
-    JS_FreeValue(ctx, obj);
-    goto exception;
-  }
-  if (js_module_set_import_meta(ctx, obj, false, true) < 0) {
-    JS_FreeValue(ctx, obj);
-    goto exception;
-  }
-  val = JS_EvalFunction(ctx, JS_DupValue(ctx, obj));
-  val = js_std_await(ctx, val);
+// static JSValue load_standalone_module(JSContext *ctx) {
+//   JSModuleDef *m;
+//   JSValue obj, val;
+//   obj = JS_ReadObject(ctx, qjsc_standalone, qjsc_standalone_size,
+//                       JS_READ_OBJ_BYTECODE);
+//   if (JS_IsException(obj))
+//     goto exception;
+//   assert(JS_VALUE_GET_TAG(obj) == JS_TAG_MODULE);
+//   if (JS_ResolveModule(ctx, obj) < 0) {
+//     JS_FreeValue(ctx, obj);
+//     goto exception;
+//   }
+//   if (js_module_set_import_meta(ctx, obj, false, true) < 0) {
+//     JS_FreeValue(ctx, obj);
+//     goto exception;
+//   }
+//   val = JS_EvalFunction(ctx, JS_DupValue(ctx, obj));
+//   val = js_std_await(ctx, val);
 
-  if (JS_IsException(val)) {
-    JS_FreeValue(ctx, obj);
-  exception:
-    js_std_dump_error(ctx);
-    // exit(1);
-    return JS_EXCEPTION;
-  }
-  JS_FreeValue(ctx, val);
+//   if (JS_IsException(val)) {
+//     JS_FreeValue(ctx, obj);
+//   exception:
+//     js_std_dump_error(ctx);
+//     // exit(1);
+//     return JS_EXCEPTION;
+//   }
+//   JS_FreeValue(ctx, val);
 
-  m = JS_VALUE_GET_PTR(obj);
-  JS_FreeValue(ctx, obj);
-  return JS_GetModuleNamespace(ctx, m);
-}
+//   m = JS_VALUE_GET_PTR(obj);
+//   JS_FreeValue(ctx, obj);
+//   return JS_GetModuleNamespace(ctx, m);
+// }
 
 static int eval_buf(JSContext *ctx, const void *buf, int buf_len,
                     const char *filename, int eval_flags) {
@@ -227,13 +227,13 @@ static JSContext *JS_NewCustomContext(JSRuntime *rt) {
 
   JSValue global = JS_GetGlobalObject(ctx);
   JS_SetPropertyFunctionList(ctx, global, global_obj, countof(global_obj));
-  JSValue args = JS_NewArray(ctx);
-  int i;
-  for (i = 0; i < qjs__argc; i++) {
-    JS_SetPropertyUint32(ctx, args, i, JS_NewString(ctx, qjs__argv[i]));
-  }
-  JS_SetPropertyStr(ctx, global, "execArgv", args);
-  JS_SetPropertyStr(ctx, global, "argv0", JS_NewString(ctx, qjs__argv[0]));
+  // JSValue args = JS_NewArray(ctx);
+  // int i;
+  // for (i = 0; i < qjs__argc; i++) {
+  //   JS_SetPropertyUint32(ctx, args, i, JS_NewString(ctx, qjs__argv[i]));
+  // }
+  // JS_SetPropertyStr(ctx, global, "execArgv", args);
+  // JS_SetPropertyStr(ctx, global, "argv0", JS_NewString(ctx, qjs__argv[0]));
   JSValue navigator_proto = JS_NewObject(ctx);
   JS_SetPropertyFunctionList(ctx, navigator_proto, navigator_proto_funcs,
                              countof(navigator_proto_funcs));
@@ -755,9 +755,9 @@ JS_App *js_app_new(int max_stack_size, int max_heap_size) {
                     "globalThis.bjson = bjson;\n"
                     "globalThis.std = std;\n"
                     "globalThis.os = os;\n"
-                    "var console = {};\n"
-                    "console.log = val => std.printf(val);\n";
-  eval_buf(app->ctx, str, strlen(str), "<zqjs>", JS_EVAL_TYPE_MODULE);
+                    "globalThis.console = {};\n"
+                    "globalThis.console.log = val => std.printf(val);\n";
+  eval_buf(app->ctx, str, strlen(str), "<zqjs>", JS_EVAL_TYPE_MODULE); 
   // global
   app->global = JS_GetGlobalObject(app->ctx);
   return app;
@@ -768,6 +768,7 @@ void js_app_free(JS_App *app) {
     js_std_free_handlers(app->rt);
     JS_FreeContext(app->ctx);
     JS_FreeRuntime(app->rt);
+    free(app);
   }
 }
 
@@ -791,4 +792,11 @@ int js_app_eval_file(JS_App* app, const char* filename){
     return 0;
   }
   return eval_file(app->ctx, filename, -1);
+}
+
+void js_app_run_loop(JS_App* app){
+  if(app == NULL){
+    return;
+  }
+  js_std_loop(app->ctx);
 }

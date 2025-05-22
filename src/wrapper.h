@@ -45,4 +45,7 @@ int js_app_eval_file(JS_App* app, const char* filename);
 // Returns: 0 on success, -1 on failure.
 void js_app_eval_bin(JS_App* app, const char* data, const int data_len);
 
+// run loop until end
+void js_app_run_loop(JS_App* app);
+
 #endif

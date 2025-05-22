@@ -21,3 +21,8 @@ zig build
 ## use it
 please refer to the `build.zig` file to integrate it into your project.
 
+```bash
+zig build
+./zig-out/bin/demo ./zig-out/bin/demo.js 
+```
+

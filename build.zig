@@ -103,7 +103,6 @@ pub fn build(b: *std.Build) void {
     const zjs_lib_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
-        // .root_source_file = .{ .path = "src/root.zig" },
     });
     zjs_lib_mod.addIncludePath(b.path("quickjs"));
     zjs_lib_mod.addIncludePath(b.path("src"));
@@ -123,11 +122,26 @@ pub fn build(b: *std.Build) void {
     zjs_lib.linkLibC();
     zjs_lib.linkLibrary(qjs_lib);
 
+    // test
+    const demo_exe = b.addExecutable(.{
+        .name = "demo",
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("tests/demo.zig"),
+    });
+    demo_exe.addIncludePath(b.path("src"));
+    demo_exe.addIncludePath(b.path("quickjs"));
+    demo_exe.linkLibrary(zjs_lib);
+
     // install
     // b.installArtifact(qjs_lib);
     b.installArtifact(zjs_lib);
     b.installArtifact(qjsc_exe);
     b.installArtifact(qjs_exe);
+
+    // test
+    b.installArtifact(demo_exe);
+    b.installFile("tests/demo.js", "bin/demo.js");
 
     // headers
     b.installFile("quickjs/quickjs.h", "include/quickjs.h");
