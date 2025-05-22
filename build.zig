@@ -52,10 +52,10 @@ pub fn build(b: *std.Build) void {
         qjs_lib_mod.linkSystemLibrary("pthread", .{ .needed = true });
     }
 
-    const qjs_lib = b.addSharedLibrary(.{
-        .name = "zqjs",
+    const qjs_lib = b.addStaticLibrary(.{
+        .name = "qjs",
         .root_module = qjs_lib_mod,
-        .version = .{ .major = 1, .minor = 0, .patch = 0 },
+        // .version = .{ .major = 1, .minor = 0, .patch = 0 },
     });
     qjs_lib.linkLibC();
 
@@ -72,7 +72,7 @@ pub fn build(b: *std.Build) void {
     });
     qjsc_exe_mod.addIncludePath(b.path("quickjs"));
     const qjsc_exe = b.addExecutable(.{
-        .name = "zqjsc",
+        .name = "qjsc",
         .root_module = qjsc_exe_mod,
     });
     qjsc_exe.linkLibC();
@@ -93,14 +93,44 @@ pub fn build(b: *std.Build) void {
     });
     qjs_exe_mod.addIncludePath(b.path("quickjs"));
     const qjs_exe = b.addExecutable(.{
-        .name = "zqjs",
+        .name = "qjs",
         .root_module = qjs_exe_mod,
     });
     qjs_exe.linkLibC();
     qjs_exe.linkLibrary(qjs_lib);
 
+    // zjs
+    const zjs_lib_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        // .root_source_file = .{ .path = "src/root.zig" },
+    });
+    zjs_lib_mod.addIncludePath(b.path("quickjs"));
+    zjs_lib_mod.addIncludePath(b.path("src"));
+    zjs_lib_mod.addCSourceFiles(.{
+        .files = &.{
+            "src/wrapper.c",
+        },
+        .flags = c_flags.items,
+    });
+    zjs_lib_mod.link_libc = true;
+
+    const zjs_lib = b.addLibrary(.{
+        .name = "zjs",
+        .root_module = zjs_lib_mod,
+        .version = .{ .major = 1, .minor = 0, .patch = 0 },
+    });
+    zjs_lib.linkLibC();
+    zjs_lib.linkLibrary(qjs_lib);
+
     // install
-    b.installArtifact(qjs_lib);
+    // b.installArtifact(qjs_lib);
+    b.installArtifact(zjs_lib);
     b.installArtifact(qjsc_exe);
     b.installArtifact(qjs_exe);
+
+    // headers
+    b.installFile("quickjs/quickjs.h", "include/quickjs.h");
+    b.installFile("quickjs/quickjs-libc.h", "include/quickjs-libc.h");
+    b.installFile("src/wrapper.h", "include/wrapper.h");
 }
