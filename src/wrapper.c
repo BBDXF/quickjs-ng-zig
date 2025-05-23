@@ -747,16 +747,16 @@ JS_App *js_app_new(int max_stack_size, int max_heap_size) {
   // loader for ES6 modules
   JS_SetModuleLoaderFunc(app->rt, NULL, js_module_loader, NULL);
   // exit on unhandled promise rejections
-  // JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL);
+  JS_SetHostPromiseRejectionTracker(app->rt, js_std_promise_rejection_tracker, NULL);
+  // register console.log and args
+  js_std_add_helpers(app->ctx, 0, NULL);
   // make'std' and 'os' visible to non module code
   const char *str = "import * as bjson from 'qjs:bjson';\n"
                     "import * as std from 'qjs:std';\n"
                     "import * as os from 'qjs:os';\n"
                     "globalThis.bjson = bjson;\n"
                     "globalThis.std = std;\n"
-                    "globalThis.os = os;\n"
-                    "globalThis.console = {};\n"
-                    "globalThis.console.log = val => std.printf(val);\n";
+                    "globalThis.os = os;\n";
   eval_buf(app->ctx, str, strlen(str), "<zqjs>", JS_EVAL_TYPE_MODULE); 
   // global
   app->global = JS_GetGlobalObject(app->ctx);
@@ -765,6 +765,7 @@ JS_App *js_app_new(int max_stack_size, int max_heap_size) {
 
 void js_app_free(JS_App *app) {
   if (app) {
+    JS_FreeValue(app->ctx, app->global);
     js_std_free_handlers(app->rt);
     JS_FreeContext(app->ctx);
     JS_FreeRuntime(app->rt);
